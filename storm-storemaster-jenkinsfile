@@ -1,0 +1,121 @@
+pipeline {
+    agent any
+
+    environment {
+        APP = "STORM_StoreMasterIDB"
+        GITREPO = "JFLIT"
+        CACHE = "dotnet"
+	DUPLO_TOKEN=credentials('DUPLO_TOKEN')
+	DUPLO_HOST="https://jfl-dev.duplocloud.net"
+        GIT_BRANCH = "${params.GIT_BRANCH}"
+        RELEASE_DATE = new java.text.SimpleDateFormat('yyyyMMddHHmm').format(new Date())
+        branch_name = "${params.GIT_BRANCH}"
+        GIT_TAG = sh(returnStdout: true, script: "git rev-parse --short=10 HEAD").trim()
+    }
+    
+    parameters {
+        string(name: 'APP', description: 'App name')
+        string(name: 'GIT_BRANCH', defaultValue: 'staging', description: 'Git branch')
+        string(name: 'ORG', defaultValue: 'JFLIT', description: 'Git org')
+        string(name: 'TENANT', description: 'Give either fx-dev or fx-qa')
+        string(name: 'DOCKER_TAG', description: 'Give branch in lowercase as Docker tag')
+        string(name: 'DOTNET_VERSION', description: "DOTNET")
+        string(name: 'DEPLOYMENT_GIT_BRANCH', description: "DEPLOYMENT GIT BRANCH")
+        booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: "Skip Deploy")
+    }
+
+    stages {
+        stage('Cleanup') {
+            steps {
+                ansiColor('xterm') {
+                    deleteDir()
+                    sh "rm -rf ${env.WORKSPACE}/${APP}"
+                }
+            }
+        }
+        
+        stage('Checkout') {
+            steps {
+                ansiColor('xterm') {          
+                    checkout scm
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: "${env.GIT_BRANCH}"]],
+                        doGenerateSubmoduleConfigurations: false,
+                        userRemoteConfigs: [[credentialsId: 'dotnet-api', url: "https://github.com/${GITREPO}/${APP}.git"]],
+                        extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${APP}"]]
+                    ])    
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                ansiColor('xterm') {            
+                    script {
+                        docker.withRegistry('', '') {
+                            docker.image("dotnet-agent:1.0").inside("--privileged -u 113 -v ${env.CACHE}:${env.WORKSPACE}/cache") {
+                                dir("${APP}") {
+                                    sh """
+                                    cd JFL.StoreMasterWebAPI/
+                                    dotnet --version
+                                    dotnet restore
+                                    dotnet build
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('dotnet publish') {
+            steps {
+                ansiColor('xterm') {            
+                    script {
+                        docker.withRegistry('', '') {
+                            docker.image("dotnet-agent:1.0").inside("--privileged -u 113 -v ${env.CACHE}:${env.WORKSPACE}/cache") {
+                                dir("${APP}") {
+                                    sh """
+                                    cd JFL.StoreMasterWebAPI/
+                                    dotnet --version
+                                    dotnet test
+                                    dotnet publish -c Release -o ./publish
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+	    stage("Build auth-server") {
+      	    steps { 
+		      dir("${APP}") {
+                      ansiColor('xterm') {
+          			script {				  
+				          sh '''	   
+						  	cd JFL.StoreMasterWebAPI/		        
+                            wget https://raw.githubusercontent.com/duplocloud/demo-npm-service/master/.circleci/duplo_utils.sh
+                            chmod +x duplo_utils.sh									
+                            . ./duplo_utils.sh 
+                            with_aws>tmp.txt 
+					        cat tmp.txt | grep -i aws>tmp1.txt
+                            . ./tmp1.txt > /dev/null
+                            export $(cut -d= -f1 tmp1.txt)
+							eval $(aws ecr get-login --no-include-email --region ap-south-1 | sed 's;https://;;g') 
+							docker build --tag 481716204214.dkr.ecr.ap-south-1.amazonaws.com/storm_storemaster:${DOCKER_TAG}${RELEASE_DATE} --no-cache --pull -f Dockerfile .
+							docker push 481716204214.dkr.ecr.ap-south-1.amazonaws.com/storm_storemaster:${DOCKER_TAG}${RELEASE_DATE}
+							docker rmi 481716204214.dkr.ecr.ap-south-1.amazonaws.com/storm_storemaster:${DOCKER_TAG}${RELEASE_DATE}
+					  '''        				    
+          				}
+			  }
+        			
+                     } 
+
+      				}
+			}
+    }
+}
