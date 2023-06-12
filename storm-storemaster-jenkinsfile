@@ -5,8 +5,6 @@ pipeline {
         APP = "STORM_StoreMasterIDB"
         GITREPO = "JFLIT"
         CACHE = "dotnet"
-	DUPLO_TOKEN=credentials('DUPLO_TOKEN')
-	DUPLO_HOST="https://jfl-dev.duplocloud.net"
         GIT_BRANCH = "${params.GIT_BRANCH}"
         RELEASE_DATE = new java.text.SimpleDateFormat('yyyyMMddHHmm').format(new Date())
         branch_name = "${params.GIT_BRANCH}"
@@ -16,10 +14,9 @@ pipeline {
     parameters {
         string(name: 'APP', description: 'App name')
         string(name: 'GIT_BRANCH', defaultValue: 'staging', description: 'Git branch')
-        string(name: 'ORG', defaultValue: 'JFLIT', description: 'Git org')
-        string(name: 'TENANT', description: 'Give either fx-dev or fx-qa')
+        string(name: 'ORG', defaultValue: 'JFLIT', description: 'Git org')        
         string(name: 'DOCKER_TAG', description: 'Give branch in lowercase as Docker tag')
-        string(name: 'DOTNET_VERSION', description: "DOTNET")
+        string(name: 'JAVA_VERSION', description: "DOTNET")
         string(name: 'DEPLOYMENT_GIT_BRANCH', description: "DEPLOYMENT GIT BRANCH")
         booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: "Skip Deploy")
     }
