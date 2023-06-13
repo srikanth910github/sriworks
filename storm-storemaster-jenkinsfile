@@ -3,24 +3,12 @@ pipeline {
 
     environment {
         APP = "STORM_StoreMasterIDB"
-        GITREPO = "JFLIT"
-        CACHE = "dotnet"
-        GIT_BRANCH = "${params.GIT_BRANCH}"
-        RELEASE_DATE = new java.text.SimpleDateFormat('yyyyMMddHHmm').format(new Date())
+                RELEASE_DATE = new java.text.SimpleDateFormat('yyyyMMddHHmm').format(new Date())
         branch_name = "${params.GIT_BRANCH}"
         GIT_TAG = sh(returnStdout: true, script: "git rev-parse --short=10 HEAD").trim()
     }
     
-    parameters {
-        string(name: 'APP', description: 'App name')
-        string(name: 'GIT_BRANCH', defaultValue: 'staging', description: 'Git branch')
-        string(name: 'ORG', defaultValue: 'JFLIT', description: 'Git org')        
-        string(name: 'DOCKER_TAG', description: 'Give branch in lowercase as Docker tag')
-        string(name: 'JAVA_VERSION', description: "DOTNET")
-        string(name: 'DEPLOYMENT_GIT_BRANCH', description: "DEPLOYMENT GIT BRANCH")
-        booleanParam(name: 'SKIP_DEPLOY', defaultValue: false, description: "Skip Deploy")
-    }
-
+    
     stages {
         stage('Cleanup') {
             steps {
@@ -39,7 +27,7 @@ pipeline {
                         $class: 'GitSCM',
                         branches: [[name: "${env.GIT_BRANCH}"]],
                         doGenerateSubmoduleConfigurations: false,
-                        userRemoteConfigs: [[credentialsId: 'dotnet-api', url: "https://github.com/${GITREPO}/${APP}.git"]],
+                        userRemoteConfigs: [[credentialsId: 'java-api', url: "https://github.com/${}/${APP}.git"]],
                         extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${APP}"]]
                     ])    
                 }
@@ -50,38 +38,16 @@ pipeline {
             steps {
                 ansiColor('xterm') {            
                     script {
-                        docker.withRegistry('', '') {
-                            docker.image("dotnet-agent:1.0").inside("--privileged -u 113 -v ${env.CACHE}:${env.WORKSPACE}/cache") {
-                                dir("${APP}") {
-                                    sh """
-                                    cd JFL.StoreMasterWebAPI/
-                                    dotnet --version
-                                    dotnet restore
-                                    dotnet build
-                                    """
-                                }
-                            }
                         }
                     }
                 }
             }
         }
         
-        stage('dotnet publish') {
+        stage('java publish') {
             steps {
                 ansiColor('xterm') {            
                     script {
-                        docker.withRegistry('', '') {
-                            docker.image("dotnet-agent:1.0").inside("--privileged -u 113 -v ${env.CACHE}:${env.WORKSPACE}/cache") {
-                                dir("${APP}") {
-                                    sh """
-                                    cd JFL.StoreMasterWebAPI/
-                                    dotnet --version
-                                    dotnet test
-                                    dotnet publish -c Release -o ./publish
-                                    """
-                                }
-                            }
                         }
                     }
                 }
