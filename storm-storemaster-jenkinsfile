@@ -80,7 +80,7 @@ pipeline
 							docker rmi 481716204214.dkr.ecr.ap-south-1.amazonaws.com/storm_storemaster:${DOCKER_TAG}${RELEASE_DATE}
 					  '''        				    
           				}
-			               }
+			               
         			 
                                      } 
  
