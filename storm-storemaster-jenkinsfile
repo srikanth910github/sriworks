@@ -1,5 +1,4 @@
-pipeline
- {
+pipeline{
     agent any
 
     environment {
@@ -34,7 +33,7 @@ pipeline
                 }
             }
         }
-        
+
         stage('Build') {
             steps {
                 ansiColor('xterm') {            
@@ -43,7 +42,6 @@ pipeline
                     }
                 }
             }
-        }
         
         stage('java publish') {
             steps {
@@ -54,19 +52,9 @@ pipeline
                 }
             }
         }
+}
+        
 
-	    stage("Build auth-server") 
-	          {
-      	    steps 
-            { 
-		      dir("${APP}")
-		  {
-                      ansiColor('xterm') 
-		  {     
-        			 
-                                     } 
- 
-       				}
-			}
-                  }
+        
 
+    
