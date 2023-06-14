@@ -62,25 +62,7 @@ pipeline
 		      dir("${APP}")
 		  {
                       ansiColor('xterm') 
-		  {
-          			script 
-	          {				  
-				          sh '''	   
-						  	cd JFL.StoreMasterWebAPI/		        
-                            wget https://raw.githubusercontent.com/duplocloud/demo-npm-service/master/.circleci/duplo_utils.sh
-                            chmod +x duplo_utils.sh									
-                            . ./duplo_utils.sh 
-                            with_aws>tmp.txt 
-					        cat tmp.txt | grep -i aws>tmp1.txt
-                            . ./tmp1.txt > /dev/null
-                            export $(cut -d= -f1 tmp1.txt)
-							eval $(aws ecr get-login --no-include-email --region ap-south-1 | sed 's;https://;;g') 
-							docker build --tag 481716204214.dkr.ecr.ap-south-1.amazonaws.com/storm_storemaster:${DOCKER_TAG}${RELEASE_DATE} --no-cache --pull -f Dockerfile .
-							docker push 481716204214.dkr.ecr.ap-south-1.amazonaws.com/storm_storemaster:${DOCKER_TAG}${RELEASE_DATE}
-							docker rmi 481716204214.dkr.ecr.ap-south-1.amazonaws.com/storm_storemaster:${DOCKER_TAG}${RELEASE_DATE}
-					  '''        				    
-          				}
-			               
+		  {     
         			 
                                      } 
  
