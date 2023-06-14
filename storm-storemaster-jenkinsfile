@@ -38,6 +38,7 @@ pipeline{
             steps {
                 ansiColor('xterm') {            
                     script {
+                        sh 'ls'
                         }
                     }
                 }
@@ -47,6 +48,7 @@ pipeline{
             steps {
                 ansiColor('xterm') {            
                     script {
+                        sh 'ls'
                         }
                     }
                 }
